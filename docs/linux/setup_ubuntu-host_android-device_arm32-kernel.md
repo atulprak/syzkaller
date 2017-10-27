@@ -57,15 +57,47 @@ export GOPATH=`pwd`/gopath
 ```
 
 ## Build syzkaller code
-Get and build syzkaller. 
+
+### Initialize a working directory and set up environment variables
+Create a working directory. Also make sure GOROOT, GOPATH, and NDKARM are defined and exported as instructed earlier. 
+
 ``` bash
 go get -u -d github.com/atulprak/syzkaller/...
 cd gopath/src/github.com/atulprak/syzkaller/
-mkdir workdir
-# Make sure GOROOT, GOPATH, and NDKARM are defined and exported as instructed earlier before
-# running make.
-make TARGETOS=android TARGETARCH=arm 
+mkdir workdir 
+
 ```
+
+### Verify system call mapping is correct for your board
+Next step is to verify if the system call mappings that are distributed for arm in syzkaller code are correct. 
+```
+
+# Regenerate system call numbers for ARM if needed. 
+grep NR_pipe sys/linux/sys_arm.const 
+
+```
+
+If the above outputs something like:
+
+__NR_pipe = 9437226
+__NR_pipe2 = 9437543
+
+Then, syzkaller likely has an inconsistent mapping than on a recent ARM board running a recent Linux kernel. You can try printing the value of, say, __NR_pipe2, on the target board by writing a  program, cross-compiling it, and executing it on the target board. If the mapping is incorrect, you can regenerate the constants file as follows:
+
+```
+make extract TARGETOS=linux SOURCEDIR=$KSRC TARGETARCH 
+make bin/syz-extract
+bin/syz-extract -os linux -arch arm -sourcedir "$LINUX" -builddir "$LINUXBLD" <new>.txt
+
+```
+
+
+
+make TARGETOS=linux TARGETARCH=arm 
+```
+
+
+
 Create a manager config myboard.cfg, replacing the environment
 variables `$GOPATH`, `$VMLINUX` (path to vmlinux for the ARM32 board), and $DEVICES (the device ID for your board as reported by adb devices) with their actual values.
 ```
