@@ -85,18 +85,35 @@ __NR_pipe2 = 9437543
 Then, syzkaller likely has an inconsistent mapping than on a recent ARM board running a recent Linux kernel. You can try printing the value of, say, __NR_pipe2, on the target board by writing a  program, cross-compiling it, and executing it on the target board. If the mapping is incorrect, you can regenerate the constants file as follows:
 
 ```
-make extract TARGETOS=linux SOURCEDIR=$KSRC TARGETARCH 
 make bin/syz-extract
-bin/syz-extract -os linux -arch arm -sourcedir "$LINUX" -builddir "$LINUXBLD" <new>.txt
+bin/syz-extract -build -os=linux -arch=arm -sourcedir="$LINUX"
 
 ```
 
+Rerun the grep command above and verify that the output is correct, e.g.:
 
+```
+grep NR_pipe sys/linux/sys_arm.const 
+```
 
+The output should be something like:
+
+```
+__NR_pipe = 42
+__NR_pipe2 = 359
+
+```
+
+### Build syzkaller executables
+
+Run make. The output should go to ./bin and ./bin/linux_arm directories.
+
+```
 make TARGETOS=linux TARGETARCH=arm 
 ```
 
 
+### Create a manager configuration file
 
 Create a manager config myboard.cfg, replacing the environment
 variables `$GOPATH`, `$VMLINUX` (path to vmlinux for the ARM32 board), and $DEVICES (the device ID for your board as reported by adb devices) with their actual values.
