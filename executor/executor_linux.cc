@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <linux/futex.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/prctl.h>
 #include <sys/stat.h>
@@ -35,7 +36,17 @@ const unsigned long KCOV_TRACE_CMP = 1;
 const int kInFd = 3;
 const int kOutFd = 4;
 
+#if defined(__arm__)
+// The non-null address that is used in syzkaller for other architectures
+// didn't work on 32-bit ARM. Using NULL for now. This may need to be revisited
+// and a better hard-to-guess address used as  there may be a risk that
+// random mmap calls in the fuzzer end up clashing
+// with the chosen address, corrupting the ipc communication. Ultimately,
+// a more robust and efficient communication mechanism may be needed.
+void* kOutputDataAddr = NULL;
+#else
 void* const kOutputDataAddr = (void*)0x1bdbc20000ull;
+#endif
 
 uint32_t* output_data;
 uint32_t* output_pos;
@@ -46,17 +57,29 @@ int main(int argc, char** argv)
 		puts(GOOS " " GOARCH " " SYZ_REVISION " " GIT_REVISION);
 		return 0;
 	}
-
 	prctl(PR_SET_PDEATHSIG, SIGKILL, 0, 0, 0);
-	if (mmap(&input_data[0], kMaxInput, PROT_READ, MAP_PRIVATE | MAP_FIXED, kInFd, 0) != &input_data[0])
+	if (mmap(&input_data[0], kMaxInput, PROT_READ, MAP_PRIVATE | MAP_FIXED, kInFd, 0) != input_data) {
 		fail("mmap of input file failed");
+	}
+
 	// The output region is the only thing in executor process for which consistency matters.
 	// If it is corrupted ipc package will fail to parse its contents and panic.
 	// But fuzzer constantly invents new ways of how to currupt the region,
 	// so we map the region at a (hopefully) hard to guess address surrounded by unmapped pages.
-	output_data = (uint32_t*)mmap(kOutputDataAddr, kMaxOutput, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, kOutFd, 0);
-	if (output_data != kOutputDataAddr)
+
+	output_data = (uint32_t*)mmap(kOutputDataAddr, kMaxOutput, PROT_READ | PROT_WRITE, MAP_SHARED, kOutFd, 0);
+	// The following should be more reliable, irrespective of whether kOutputDataAddr is NULL
+	// or not. Change made because of ARM32 issue above.
+	if (output_data == MAP_FAILED) {
+		fail("mmap of output file failed. Returned MAP_FAILED. errno");
+		if (kOutputDataAddr == NULL) {
+			debug("kOutputdataAddr is null as planned\n");
+		}
+	}
+
+	if ((kOutputDataAddr != NULL) && (output_data != kOutputDataAddr))
 		fail("mmap of output file failed");
+
 	// Prevent random programs to mess with these fds.
 	// Due to races in collider mode, a program can e.g. ftruncate one of these fds,
 	// which will cause fuzzer to crash.
@@ -70,23 +93,18 @@ int main(int argc, char** argv)
 	install_segv_handler();
 	use_temporary_dir();
 
-#if defined(__i386__)
+#if defined(__i386__) || defined(__arm__)
 	// mmap syscall on i386/arm is translated to old_mmap and has different signature.
 	// As a workaround fix it up to mmap2, which has signature that we expect.
 	// pkg/csource has the same hack.
 	for (size_t i = 0; i < sizeof(syscalls) / sizeof(syscalls[0]); i++) {
-		if (syscalls[i].sys_nr == __NR_mmap)
-			syscalls[i].sys_nr = __NR_mmap2;
-	}
-#endif
-
-#if defined(__arm__)
-	// ARM cross-compile toolchain defines __NR_MMAP2, but not __NR_MMAP.
-	for (size_t i = 0; i < sizeof(syscalls) / sizeof(syscalls[0]); i++) {
 		if (strcmp(syscalls[i].name, "mmap") == 0) {
-                        syscalls[i].sys_nr = __NR_mmap2;
+			debug("syscall[%d].sys_nr for mmap changed to __NR_mmap2 from %d to %d.\n",
+			      syscalls[i].sys_nr, __NR_mmap2, syscalls[i].sys_nr - __NR_mmap2);
+			syscalls[i].sys_nr = __NR_mmap2;
 		}
 	}
+
 #endif
 
 	int pid = -1;
