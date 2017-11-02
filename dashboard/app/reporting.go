@@ -153,7 +153,7 @@ func currentReporting(c context.Context, bug *Bug) (*Reporting, *BugReporting, i
 			continue
 		}
 		if reporting.Status == ReportingSuspended {
-			return nil, nil, 0, fmt.Sprintf("%v: reporting suspended"), nil
+			return nil, nil, 0, fmt.Sprintf("%v: reporting suspended", bugReporting.Name), nil
 		}
 		return reporting, bugReporting, i, "", nil
 	}
@@ -321,7 +321,13 @@ func incomingCommandImpl(c context.Context, cmd *dashapi.BugUpdate) (bool, strin
 		ok, reply, err = incomingCommandTx(c, now, cmd, bugKey, dupHash)
 		return err
 	}
-	err = datastore.RunInTransaction(c, tx, &datastore.TransactionOptions{XG: true})
+	err = datastore.RunInTransaction(c, tx, &datastore.TransactionOptions{
+		XG: true,
+		// Default is 3 which fails sometimes.
+		// We don't want incoming bug updates to fail,
+		// because for e.g. email we won't have an external retry.
+		Attempts: 30,
+	})
 	if err != nil {
 		return false, internalError, err
 	}
@@ -341,11 +347,16 @@ func incomingCommandTx(c context.Context, now time.Time, cmd *dashapi.BugUpdate,
 			return false, internalError, err
 		}
 		if canon.Status != BugStatusOpen {
-			return false, "This bug is already closed (dup was closed).\n" +
-				"Don't change closed syzbot bugs.", nil
+			// We used to reject updates to closed bugs,
+			// but this is confusing and non-actionable for users.
+			// So now we fail the update, but give empty reason,
+			// which means "don't notify user".
+			log.Warningf(c, "Dup bug is already closed")
+			return false, "", nil
 		}
 	case BugStatusFixed, BugStatusInvalid:
-		return false, "This bug is already closed.", nil
+		log.Warningf(c, "This bug is already closed")
+		return false, "", nil
 	default:
 		return false, internalError, fmt.Errorf("unknown bug status %v", bug.Status)
 	}
@@ -354,7 +365,8 @@ func incomingCommandTx(c context.Context, now time.Time, cmd *dashapi.BugUpdate,
 		return false, internalError, fmt.Errorf("can't find bug reporting")
 	}
 	if !bugReporting.Closed.IsZero() {
-		return false, "This bug is already closed.", nil
+		log.Warningf(c, "This bug reporting is already closed")
+		return false, "", nil
 	}
 	state, err := loadReportingState(c)
 	if err != nil {

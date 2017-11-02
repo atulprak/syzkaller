@@ -1,4 +1,13 @@
-# Generic setup instructions
+# How to set up syzkaller
+
+Below are the generic instructions for how to set up syzkaller to fuzz the Linux kernel.
+Instructions for a particular VM type or kernel arch can be found on these pages:
+
+- [Setup: Ubuntu host, QEMU vm, x86-64 kernel](setup_ubuntu-host_qemu-vm_x86-64-kernel.md)
+- [Setup: Ubuntu host, Odroid C2 board, arm64 kernel](setup_ubuntu-host_odroid-c2-board_arm64-kernel.md)
+- [Setup: Linux host, QEMU vm, arm64 kernel](setup_linux-host_qemu-vm_arm64-kernel.md)
+- [Setup: Linux host, Android device, arm64 kernel](setup_linux-host_android-device_arm64-kernel.md)
+- [Setup: Linux isolated host](setup_linux-host_isolated.md)
 
 ## Install
 
@@ -11,7 +20,7 @@ The following components are needed to use syzkaller:
 
 Generic steps to set up syzkaller are described below.
 
-If you encounter any troubles, check the [troubleshooting](troubleshooting.md) page.
+If you encounter any troubles, check the [troubleshooting](/docs/troubleshooting.md) page.
 
 ### C Compiler
 
@@ -25,7 +34,7 @@ KCOV was committed upstream in Linux kernel version 4.6 and can be enabled by co
 For older kernels you need to backport commit [kernel: add kcov code coverage](https://github.com/torvalds/linux/commit/5c9a8750a6409c63a0f01d51a9024861022f6593).
 
 To enable more syzkaller features and improve bug detection abilities, it's recommended to use additional config options.
-See [this page](linux_kernel_configs.md) for details.
+See [this page](kernel_configs.md) for details.
 
 ### VM Setup
 
@@ -48,7 +57,7 @@ These are the generic requirements for a syzkaller VM:
    the debugfs filesystem at `/sys/kernel/debug`.
 
 To use QEMU syzkaller VMs you have to install QEMU on your host system, see [QEMU docs](http://wiki.qemu.org/Manual) for details.
-The [create-image.sh](tools/create-image.sh) script can be used to create a suitable Linux image.
+The [create-image.sh](/tools/create-image.sh) script can be used to create a suitable Linux image.
 Detailed steps for setting up syzkaller with QEMU on a Linux host are avaialble for [x86-64](setup_ubuntu-host_qemu-vm_x86-64-kernel.md) and [arm64](setup_linux-host_qemu-vm_arm64-kernel.md) kernels.
 
 For some details on fuzzing the kernel on an Android device check out [this page](setup_linux-host_android-device_arm64-kernel.md) and the explicit instructions for an Odroid C2 board are available [here](setup_ubuntu-host_odroid-c2-board_arm64-kernel.md).
@@ -67,4 +76,4 @@ Then, run `go get -u -d github.com/google/syzkaller/...` to checkout syzkaller s
 Then, `cd $GOPATH/src/github.com/google/syzkaller` and
 build with `make`, which generates compiled binaries in the `bin/` folder.
 Note: if you want to do cross-OS/arch testing, you need to specify `TARGETOS`,
-`TARGETVMARCH` and `TARGETARCH` arguments to `make`. See the [Makefile](../Makefile) for details.
+`TARGETVMARCH` and `TARGETARCH` arguments to `make`. See the [Makefile](/Makefile) for details.

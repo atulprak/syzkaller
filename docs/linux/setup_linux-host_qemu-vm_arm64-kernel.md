@@ -22,6 +22,7 @@ Choose the following options.
 	    [*]   Show packages that are also provided by busybox
 	    Networking applications
 	        [*] dhcpcd
+	        [*] iproute2
 	        [*] openssh
     Filesystem images
 	    [*] ext2/3/4 root filesystem
@@ -151,4 +152,4 @@ A sample config file that exercises the required options are shown below. Modify
 At this point, you should be able to visit `localhost:56700` and view the results of the fuzzing.
 
 If you get issues after `syz-manager` starts, consider running it with the `-debug` flag.
-Also see [this page](troubleshooting.md) for troubleshooting tips.
+Also see [this page](/docs/troubleshooting.md) for troubleshooting tips.
