@@ -130,6 +130,7 @@ ioctl$UFFDIO_COPY(fd fd_uffd, cmd const[UFFDIO_WAKE], arg ptr[in, uffdio_range])
 ioctl$UFFDIO_ZEROPAGE(fd fd_uffd, cmd const[UFFDIO_WAKE], arg ptr[in, uffdio_range])
 
 mmap(addr vma, len len[addr], prot flags[mmap_prot], flags flags[mmap_flags], fd fd, offset fileoff) vma
+mmap2(addr vma, len len[addr], prot flags[mmap_prot], flags flags[mmap_flags], fd fd, offset fileoff) vma
 munmap(addr vma, len len[addr])
 mremap(addr vma, len len[addr], newlen len[newaddr], flags flags[mremap_flags], newaddr vma) vma
 remap_file_pages(addr vma, size len[addr], prot flags[mmap_prot], pgoff intptr, flags flags[mmap_flags])
