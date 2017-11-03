@@ -92,6 +92,21 @@ func (*linux) processFile(arch *Arch, info *compiler.ConstInfo) (map[string]uint
 		"-I" + sourceDir,
 		"-include", sourceDir + "/include/linux/kconfig.h",
 	}
+
+	// The above flags are not sufficient for ARM32 processor. The
+	// problem is that syscall numbers are being generated without a
+	// cross-compiler. The ARM32 cross-compiler appears to add different
+	// flags than the normal gcc compiler.  Ideally, the code to generate
+	// syscall numbers should be executed on the target processor. But, it
+	// appears passing in -D__ARM_EABI__ also does the trick. EABI (new
+	// Embedded ABI by ARM) (as opposed to OABI) appears to be the default in
+	// current ARM32 cross-compilers. Without -D__ARM_EABI__, the code in
+	// linux/arch/arm/uapi/asm/unistd.h causes the NR_SYSCALL_BASE to be set
+	// incorrectly to 0x900000, causing most system call numbers to have the wrong starting value.
+	if headerArch == "arm" {
+		args = append(args, "-D__ARM_EABI__")
+	}
+
 	args = append(args, arch.target.CFlags...)
 	for _, incdir := range info.Incdirs {
 		args = append(args, "-I"+sourceDir+"/"+incdir)
