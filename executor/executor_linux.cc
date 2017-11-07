@@ -62,22 +62,22 @@ int main(int argc, char** argv)
 		fail("mmap of input file failed");
 	}
 
-	// The output region is the only thing in executor process for which consistency matters.
-	// If it is corrupted ipc package will fail to parse its contents and panic.
-	// But fuzzer constantly invents new ways of how to currupt the region,
-	// so we map the region at a (hopefully) hard to guess address surrounded by unmapped pages.
+		// The output region is the only thing in executor process for which consistency matters.
+		// If it is corrupted ipc package will fail to parse its contents and panic.
+		// But fuzzer constantly invents new ways of how to currupt the region,
+		// so we map the region at a (hopefully) hard to guess address surrounded by unmapped pages.
 
 #if defined(__arm__)
 	output_data = (uint32_t*)mmap(kOutputDataAddr, kMaxOutput, PROT_READ | PROT_WRITE, MAP_SHARED, kOutFd, 0);
 #else
-        output_data = (uint32_t*)mmap(kOutputDataAddr, kMaxOutput, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, kOutFd, 0);
+	output_data = (uint32_t*)mmap(kOutputDataAddr, kMaxOutput, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, kOutFd, 0);
 #endif
 
 	// The following should be more reliable, irrespective of
-        // whether kOutputDataAddr is NULL or not.
+	// whether kOutputDataAddr is NULL or not.
 	if (output_data == MAP_FAILED) {
 		fail("mmap of output file failed. Returned MAP_FAILED. errno");
-        }
+	}
 	if ((kOutputDataAddr != NULL) && (output_data != kOutputDataAddr))
 		fail("mmap of output file failed");
 
