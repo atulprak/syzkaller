@@ -87,6 +87,7 @@ Then, syzkaller likely has an inconsistent mapping than on a recent ARM board ru
 ```
 make bin/syz-extract
 bin/syz-extract -build -os=linux -arch=arm -sourcedir="$LINUX"
+make generate TARGETOS=linux TARGETARCH=arm SOURCEDIR="$LINUX"
 
 ```
 
