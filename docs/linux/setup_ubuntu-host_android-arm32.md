@@ -78,8 +78,12 @@ grep NR_pipe sys/linux/arm.go
 ```
 
 If the above outputs something like:
+
+```
 	{Name: "__NR_pipe", Value: 42},
 	{Name: "__NR_pipe2", Value: 359},
+```
+
 
 Then, the mapping is fine. Otherwise, regenerate arm.go:
 
@@ -94,7 +98,6 @@ Alternatively, you can execute:
 make bin/syz-extract
 bin/syz-extract -build -os=linux -arch=arm -sourcedir="$LINUX"
 TARGETOS=linux TARGETARCH=arm SOURCEDIR="$LINUX" make generate
-
 ```
 
 Rerun the grep command above and verify that the output is correct.

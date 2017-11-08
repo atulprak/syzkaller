@@ -99,9 +99,13 @@ int main(int argc, char** argv)
 	// As a workaround fix it up to mmap2, which has signature that we expect.
 	// pkg/csource has the same hack.
 	for (size_t i = 0; i < sizeof(syscalls) / sizeof(syscalls[0]); i++) {
-		if (syscalls[i].sys_nr == __NR_mmap)
+		if (strcmp(syscalls[i].name, "mmap") == 0) {
+			debug("syscall[%d].sys_nr for mmap changed to __NR_mmap2 from %d to %d.\n",
+			      syscalls[i].sys_nr, __NR_mmap2, syscalls[i].sys_nr - __NR_mmap2);
 			syscalls[i].sys_nr = __NR_mmap2;
+		}
 	}
+
 #endif
 
 #if defined(__arm__)

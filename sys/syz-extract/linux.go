@@ -101,9 +101,9 @@ func (*linux) processFile(arch *Arch, info *compiler.ConstInfo) (map[string]uint
 	// issues in running syz-manager. For now, the workaround
 	// is in executor/executor_linux.cc to shift the system call
 	// numbers by 0x900000 for ARM architecture and get a similar
-	// behavior as adding the -D__ARM_EABI__ would do when generating
-	// the system call numbers for ARM by compiling the generated code
-	// using a compiler on the host machine.
+	// behavior as adding the -D__ARM_EABI__ to gcc, when
+	// generating the system calls for ARM, by compiling the
+	// addSource generated code on the host computer.
 	/*
 		if headerArch == "arm" {
 			args = append(args, "-D__ARM_EABI__")
