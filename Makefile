@@ -40,7 +40,7 @@ else ifeq ("$(TARGETARCH)", "386")
 else ifeq ("$(TARGETARCH)", "arm64")
 	CC = "aarch64-linux-gnu-gcc"
 else ifeq ("$(TARGETARCH)", "arm")
-	# For ARM32, gcc cross-compiler gives an error.
+	# For ARM32, gcc cross-compiler in Android toolchain gives an error.
 	# Using clang cross-compiler in android NDK toolchain instead.
 	CC = $(NDKARM)/bin/clang++
 	NOSTATIC=1
