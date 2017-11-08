@@ -73,44 +73,39 @@ Next step is to verify if the system call mappings that are distributed for arm 
 ```
 
 # Regenerate system call numbers for ARM if needed. 
-grep NR_pipe sys/linux/sys_arm.const 
+grep NR_pipe sys/linux/arm.go
 
 ```
 
 If the above outputs something like:
+	{Name: "__NR_pipe", Value: 42},
+	{Name: "__NR_pipe2", Value: 359},
 
-__NR_pipe = 9437226
-__NR_pipe2 = 9437543
+Then, the mapping is fine. Otherwise, regenerate arm.go:
 
-Then, syzkaller likely has an inconsistent mapping than on a recent ARM board running a recent Linux kernel. You can try printing the value of, say, __NR_pipe2, on the target board by writing a  program, cross-compiling it, and executing it on the target board. If the mapping is incorrect, you can regenerate the constants file as follows:
+```
+SOURCEDIR="$LINUX" make extract 
+make generate
+```
+
+Alternatively, you can execute:
 
 ```
 make bin/syz-extract
 bin/syz-extract -build -os=linux -arch=arm -sourcedir="$LINUX"
-make generate TARGETOS=linux TARGETARCH=arm SOURCEDIR="$LINUX"
+TARGETOS=linux TARGETARCH=arm SOURCEDIR="$LINUX" make generate
 
 ```
 
-Rerun the grep command above and verify that the output is correct, e.g.:
+Rerun the grep command above and verify that the output is correct.
 
-```
-grep NR_pipe sys/linux/sys_arm.const 
-```
-
-The output should be something like:
-
-```
-__NR_pipe = 42
-__NR_pipe2 = 359
-
-```
 
 ### Build syzkaller executables
 
 Run make. The output should go to ./bin and ./bin/linux_arm directories.
 
 ```
-make TARGETOS=linux TARGETARCH=arm 
+TARGETOS=android TARGETARCH=arm make
 ```
 
 
