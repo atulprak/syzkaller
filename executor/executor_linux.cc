@@ -94,18 +94,41 @@ int main(int argc, char** argv)
 	install_segv_handler();
 	use_temporary_dir();
 
-#if defined(__i386__) || defined(__arm__)
-	// mmap syscall on i386/arm is translated to old_mmap and has different signature.
+#if defined(__i386__)
+	// mmap syscall on i386 is translated to old_mmap and has different signature.
 	// As a workaround fix it up to mmap2, which has signature that we expect.
 	// pkg/csource has the same hack.
 	for (size_t i = 0; i < sizeof(syscalls) / sizeof(syscalls[0]); i++) {
+		if (syscalls[i].sys_nr == __NR_mmap)
+			syscalls[i].sys_nr = __NR_mmap2;
+	}
+#endif
+
+#if defined(__arm__)
+	// syscalls_linux.h, which is auto-generated, appears to be off by 0x900000 (or 9437184).
+	// The problem is that syscall numbers are being generated from the dynamically generated
+	// C code by sysgen without using a cross-compiler.
+	// The ARM32 cross-compiler appears to add different
+	// flags than the normal gcc compiler.  Ideally, the code to generate
+	// syscall numbers should be executed on the target processor.
+	// That was tried by making changes to sys/syz-extract/linux.go andding in a -D__ARM_EABI__
+	// flag. That generated correct numbers, but led to another issue. Some calls such as mmap()
+	// are no longer system calls on ARM-based Linux and are also marked obsolete. That
+	// caused further issues with syz-manager. For now, the following hack appears to provide
+	// a workaround.
+	for (size_t i = 0; i < sizeof(syscalls) / sizeof(syscalls[0]); i++) {
+		// For some reason, syz-sysgen is generating incorrect sys_nr values
+		// for ARM-32. For example, sys_nr for "pipe" is 9437226, but __NR_pipe is 42.
+		// Trying out a hack of reducing all the values by 9437226-42.
+		if (syscalls[i].sys_nr >= 9437184) {
+			syscalls[i].sys_nr -= 9437184;
+		}
 		if (strcmp(syscalls[i].name, "mmap") == 0) {
-			debug("syscall[%d].sys_nr for mmap changed to __NR_mmap2 from %d to %d.\n",
+			debug("syscall[%d].sys_nr for mmap changed from %d to %d. Difference is %d\n",
 			      syscalls[i].sys_nr, __NR_mmap2, syscalls[i].sys_nr - __NR_mmap2);
 			syscalls[i].sys_nr = __NR_mmap2;
 		}
 	}
-
 #endif
 
 	int pid = -1;
