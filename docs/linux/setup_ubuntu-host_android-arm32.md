@@ -68,40 +68,6 @@ mkdir workdir
 
 ```
 
-### Verify system call mapping is correct for your board
-Next step is to verify if the system call mappings that are distributed for arm in syzkaller code are correct. 
-```
-
-# Regenerate system call numbers for ARM if needed. 
-grep NR_pipe sys/linux/arm.go
-
-```
-
-If the above outputs something like:
-
-```
-	{Name: "__NR_pipe", Value: 42},
-	{Name: "__NR_pipe2", Value: 359},
-```
-
-
-Then, the mapping is fine. Otherwise, regenerate arm.go:
-
-```
-SOURCEDIR="$LINUX" make extract 
-make generate
-```
-
-Alternatively, you can execute:
-
-```
-make bin/syz-extract
-bin/syz-extract -build -os=linux -arch=arm -sourcedir="$LINUX"
-TARGETOS=linux TARGETARCH=arm SOURCEDIR="$LINUX" make generate
-```
-
-Rerun the grep command above and verify that the output is correct.
-
 
 ### Build syzkaller executables
 
@@ -144,5 +110,8 @@ Now syzkaller should be running, you can check manager status with your web brow
 
 If you get issues after `syz-manager` starts, consider running it with the `-debug` flag.
 Also see [this page](troubleshooting.md) for troubleshooting tips.
+
+
+
 
 
